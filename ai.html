@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>AIテスト</title>
+	<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+	<script type="text/javascript" src="../jgame.js/src/js/jgame.js"></script>
+	<script type="text/javascript" src="js/ai.js"></script>
+	<script type="text/javascript">
+function drawMap(canvas, map) {
+	var ctx = canvas.getContext("2d")
+	for (var x=0; x<map.length; x++) {
+		for (var y=0; y<map[x].length; y++) {
+			if (map[x][y].c.length) {
+				if (map[x][y].c[0].team_id == 1) {
+					ctx.fillStyle = "blue";
+				} else {
+					ctx.fillStyle = "red";
+				}
+			} else {
+				switch(map[x][y].chip) {
+					default:
+						//ctx.fillStyle = "rgba(255,255,255,255)";
+						ctx.fillStyle = "rgba("
+							+(255+map[x][y].chip*10)
+							+","+(255+map[x][y].chip*10)
+							+","+(255+map[x][y].chip*10)
+							+",255)";
+				}
+			}
+			ctx.fillRect(x*8, y*8, 8, 8);
+		}
+	}
+}
+
+function action_by_routine(chara, action) {
+	if (action.name == "move") {
+		var angle = Ai.Util.getAngleByDirection(chara.currentAngle, action.target);
+		var movePixel = action.count;
+		switch (angle) {
+			case Angle.up:
+				chara.move(0, Math.max(0-chara.y, -movePixel), chara.moveTime);
+			break;
+			case Angle.down:
+				chara.move(0, Math.min(game.height-chara.height-chara.y, movePixel), chara.moveTime);
+			break;
+			case Angle.right:
+				chara.move(Math.min(game.width-chara.width-chara.x, movePixel), 0, chara.moveTime);
+			break;
+			case Angle.left:
+				chara.move(Math.max(0-chara.x, -movePixel), 0, chara.moveTime);
+			break;
+		}
+	} else if (action.name == "rotate") {
+		var angle = Ai.Util.getAngleByDirection(chara.currentAngle, action.target);
+		chara.angle(angle);
+	} else if (action.name == "attack") {
+		var range = [];
+		range.push({x:chara["_x"], y:chara["_y"]});
+		switch (chara.currentAngle) {
+			case Angle.up:
+				range.push({x:chara["_x"], y:chara["_y"]-1})
+			break;
+			case Angle.down:
+				range.push({x:chara["_x"], y:chara["_y"]+1})
+			break;
+			case Angle.right:
+				range.push({x:chara["_x"]+1, y:chara["_y"]})
+			break;
+			case Angle.left:
+				range.push({x:chara["_x"]-1, y:chara["_y"]})
+			break;
+		}
+		for (var i=0; i<range.length; i++) {
+			try {
+				var c = map_info[range[i].x][range[i].y];
+				for (var j=0; j<c.c.length; j++) {
+					if (c.c[j]["team_id"] != chara["team_id"]) {
+						c.c[j].moving = false;
+						switch (chara.currentAngle) {
+							case Angle.up:
+								c.c[j].move(0, Math.max(0-c.c[j].y, -128), 20);
+							break;
+							case Angle.down:
+								c.c[j].move(0, Math.min(game.height-c.c[j].height-c.c[j].y, 128), 20);
+							break;
+							case Angle.right:
+								c.c[j].move(Math.min(game.width-c.c[j].width-c.c[j].x, 128), 0, 20);
+							break;
+							case Angle.left:
+								c.c[j].move(Math.max(0-c.c[j].x, -128), 0, 20);
+							break;
+						}
+						if (c.c[j].moveInfo.x == c.c[j].moveInfo.dx && c.c[j].moveInfo.y == c.c[j].moveInfo.dy) {
+							c.c[j].moveInfo.dx = Math.floor(Math.random() * (game.width - c.c[j].width));
+							c.c[j].moveInfo.dy = Math.floor(Math.random() * (game.height - c.c[j].height));
+						}
+					}
+				}
+			} catch(ex) {
+				//index out of range				
+			}
+		}
+	}
+}
+
+var game;
+var update;
+var map_info = [];
+window.onload = function() {
+	if (location.search && location.search.length > 0) {
+		var values = location.search.substr(1).split("&")
+		for (var i=0; i<values.length; i++) {
+			if (values[i].indexOf("my=") == 0) {
+				(document.getElementById("my_routine")).value = decodeURI(values[i].substr(3));
+			} else if (values[i].indexOf("enemy=") == 0) {
+				(document.getElementById("enemy_routine")).value = decodeURI(values[i].substr(6));
+			}
+		}
+	}
+
+	var my_team;
+	var enemy_team;
+	var aiInfo;
+
+	game  = new Game(480, 480);
+	game.preload({
+		vx: "vx.png"
+	});
+
+	var w = Math.ceil(game.width / 32);
+	var h = Math.ceil(game.height / 32);
+	for (var x=0; x<w; x++) {
+		map_info[x] = [];
+		for (var y=0; y<h; y++) {
+			map_info[x][y] = {c:[], chip:0};
+		}
+	}
+
+	update = function(t) {
+		for (var i=0; i<my_team.length; i++) {
+			my_team[i]._x = Math.floor(my_team[i].x / 32);
+			my_team[i]._y = Math.floor(my_team[i].y / 32);
+			map_info[my_team[i]._x][my_team[i]._y].c.push(my_team[i]);
+		}
+		for (var i=0; i<enemy_team.length; i++) {
+			enemy_team[i]._x = Math.floor(enemy_team[i].x / 32);
+			enemy_team[i]._y = Math.floor(enemy_team[i].y / 32);
+			map_info[enemy_team[i]._x][enemy_team[i]._y].c.push(enemy_team[i]);
+		}
+
+		for (var x=0; x<map_info.length; x++) {
+			for (var y=0; y<map_info.length; y++) {
+				map_info[x][y].chip = 0;
+			}
+		}
+		var raderHandler = new Ai.BasicRaderHandler(map_info);
+
+		var debug_angle;
+		var debug_action;
+		for (var i=0; i<my_team.length; i++) {
+			var my = my_team[i];
+			if (! my.moving) {
+				if (i == 0) {
+					raderHandler.debug = true;
+					debug_angle = my.currentAngle;
+				}
+				raderHandler.setCharacterInfo(my, 1, 2);
+				var aiInfo = raderHandler.search();
+
+				my.routine.time += t;
+				while (my.routine.time > my["think_speed"]) {
+					my.routine.time -= my["think_speed"];
+					var action = my.routine.next(aiInfo);
+					if (action && action.name) {
+						if (i == 0)
+							debug_action = action;
+						my.action = action;
+					}
+				}
+
+				if (i == 0)
+					delete raderHandler.debug;
+			}
+		}
+
+		for (var i=0; i<enemy_team.length; i++) {
+			var enemy = enemy_team[i];
+			if (! enemy.moving) {
+				raderHandler.setCharacterInfo(enemy, 2, 1);
+
+				var aiInfo = raderHandler.search();
+				enemy.routine.time += t;
+				while (enemy.routine.time > enemy["think_speed"]) {
+					enemy.routine.time -= enemy["think_speed"];
+					var action = enemy.routine.next(aiInfo);
+					if (action && action.name) {
+						enemy.action = action;
+						//action_by_routine(enemy, action);
+					}
+				}
+			}
+		}
+
+		for (var i=0; i<my_team.length; i++) {
+			if (my_team[i].action) {
+				action_by_routine(my_team[i], my_team[i].action);
+				delete my_team[i].action;
+			}
+		}
+		for (var i=0; i<enemy_team.length; i++) {
+			if (enemy_team[i].action) {
+				action_by_routine(enemy_team[i], enemy_team[i].action);
+				delete enemy_team[i].action;
+			}
+		}
+
+		if (debug_action) {
+			drawMap(document.getElementById("raderview"), raderHandler.map.map[Angle.up]);
+			var txt = "";
+			txt = debug_action.name;
+			if (debug_action.name == "move" || debug_action.name == "rotate") {
+				txt += " : "+Ai.Util.getDirectionString(debug_action.target)
+				txt += " : "+Ai.Util.getAngleString(Ai.Util.getAngleByDirection(
+					debug_angle,
+					debug_action.target
+				));
+			}
+			document.getElementById("actionview").innerHTML = txt;
+			delete debug_action;
+		}
+		
+		for (var i=0; i<my_team.length; i++)
+			map_info[my_team[i]._x][my_team[i]._y].c = []
+		for (var i=0; i<enemy_team.length; i++)
+			map_info[enemy_team[i]._x][enemy_team[i]._y].c = []
+	}
+	var loaded = function() {
+		game.loaded.remove(loaded);
+
+		var f = new CharacterFactory(32, 48, game.r("vx"));
+		f.createClass = Character;
+		f.charaCol = 4;
+		f.animeCnt = 3;
+		f.movePixel = 32;
+		f.angle = Angle.up;
+
+		my_team = []
+		f["team_id"] = 1;
+		f["routine"] = Ai.Util.routineCompile(document.getElementById("my_routine").value);
+		my_team.push(f.create(2));
+		my_team.push(f.create(0));
+		my_team.push(f.create(0));
+		my_team.push(f.create(0));
+		my_team.push(f.create(0));
+
+		f.angle = Angle.down;
+		f["team_id"] = 2;
+		f["routine"] = Ai.Util.routineCompile(document.getElementById("enemy_routine").value);
+		enemy_team = [];
+		enemy_team.push(f.create(1));
+		enemy_team.push(f.create(1));
+		enemy_team.push(f.create(1));
+		enemy_team.push(f.create(1));
+		enemy_team.push(f.create(1));
+
+		for (var i=0; i<my_team.length; i++) {
+			my_team[i]["think_speed"] = Math.floor(Math.random() * 21 + 5);
+			enemy_team[i]["think_speed"] = Math.floor(Math.random() * 21 + 5);
+			my_team[i]["moveTime"] = Math.floor(Math.random() * 451 + 50);
+			enemy_team[i]["moveTime"] = Math.floor(Math.random() * 451 + 50);
+			my_team[i]["movePixel"] = Math.floor(Math.random() * 48 + 8);
+			enemy_team[i]["movePixel"] = Math.floor(Math.random() * 48 + 8);
+			enemy_team[i].moveTo(
+				Math.floor(Math.random() * (game.width-32+1)),
+				Math.floor(Math.random() * (game.height-48+1))
+			);
+			my_team[i].moveTo(
+				Math.floor(Math.random() * (game.width-32+1)),
+				Math.floor(Math.random() * (game.height-48+1))
+			);
+			game.currentScene.append(my_team[i]);
+			game.currentScene.append(enemy_team[i]);
+		}
+
+		var renderHandle = function() {
+			game.update.handle(update);	
+			game.render.remove(renderHandle)
+			delete game.render;
+		}
+		game.render = new Trigger();
+		game.render.handle(renderHandle);
+	}
+	game.loaded.handle(loaded);
+};
+	</script>
+</head>
+<body>
+
+<div style="float:left">
+	<div>
+	<form method="get">
+	<table><tbody>
+	<tr>
+		<th>味方側</th>
+		<th>敵側</th>
+	</tr>
+	<tr>
+		<td>
+			<textarea rows="8" cols="40" name="my" id="my_routine">
+[判断][隣接][前][敵]
+	[攻撃][1]
+[判断][方向][敵][前]
+	[移動][前][16]
+[回転][敵]
+</textarea>
+		</td>
+		<td>
+			<textarea rows="8" cols="40" name="enemy" id="enemy_routine">
+[判断][隣接][前][敵]
+	[攻撃][1]
+[判断][方向][敵][前]
+	[移動][前][32]
+[判断][ランダム][40][<]
+	[移動][ランダム][16]
+[回転][ランダム]
+</textarea>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2" align="center">
+			<input type="submit" value="実行" />
+		</td>
+	</tr>
+	</tbody></table>
+	</form>
+	</div>
+
+	<div id="jgame">
+	</div>
+	<div id="fps">
+		fps: <span id="fps_show"></span>
+	</div>
+</div>
+<div style="float:left">
+	<div>
+	<h2>基本ルール</h2>
+	<p>
+	上から順に実行。移動、回転、攻撃行動は実行後最初に戻る。<br/>
+	移動には時間がかかる。回転や攻撃は現状なぜかノータイムで実行可。<br/>
+	ただのエンジンテストなのでバランス関係はご容赦を。
+	</p>
+	<h2>コマンド</h2>
+	<ul>
+		<li>判断系
+			<ul>
+				<li>[判断][隣接][前,後,右,左][敵,味方]</li>
+				<li>[判断][方向][敵,味方][前,後,右,左]</li>
+				<li>[判断][ランダム][number][&gt;,&lt;,=,!]</li>
+			</ul>
+		</li>
+		<li>行動系
+			<ul>
+				<li>[回転][前,後,右,左]</li>
+				<li>[移動][前,後,右,左][number] （numberはピクセル量）</li>
+				<li>[攻撃][number] （このシステムだとnumber指定意味なし）</li>
+			</ul>
+		</li>
+	</ul>
+	</div>
+	<h2>デバッグ情報</h2>
+	<div>
+		<canvas id="raderview" width="120" height="120"></canvas>
+	</div>
+	<div id="actionview">
+	</div>
+	<h2>ライセンス関係</h2>
+	<div>
+キャラ画像はFirst Seed Materialさんのものを利用させていただきました。<br/>
+http://www.tekepon.net/fsm/<br/>
+このキャラ画像を、このシステムを見る以外の用途には使用しないで下さい。
+	</div>
+</div>
+<div style="clear:both"></div>
+</body>
+</html>

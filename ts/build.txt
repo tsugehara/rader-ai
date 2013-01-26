@@ -1,0 +1,3 @@
+../../jgame.js/src/js/jgame.d.ts
+Ai.ts
+--out ../js/ai.js
