@@ -11,23 +11,37 @@ function drawMap(canvas, map) {
 	var ctx = canvas.getContext("2d")
 	for (var x=0; x<map.length; x++) {
 		for (var y=0; y<map[x].length; y++) {
+			if (! map[x][y])
+				continue;
+			var r,g,b
+			r = 255+map[x][y].chip*20;
+			g = 255+map[x][y].chip*20;
+			b = 255+map[x][y].chip*20;
 			if (map[x][y].c.length) {
-				if (map[x][y].c[0].team_id == 1) {
-					ctx.fillStyle = "blue";
-				} else {
-					ctx.fillStyle = "red";
+				for (var i=0; i<map[x][y].c.length; i++ ){
+					if (map[x][y].c[i].team_id == 2) {
+						g -= 100;
+						b -= 100;
+					} else if (map[x][y].c[i].team_id == 1) {
+						g -= 100;
+						r -= 100;
+					}
 				}
-			} else {
-				switch(map[x][y].chip) {
-					default:
-						//ctx.fillStyle = "rgba(255,255,255,255)";
-						ctx.fillStyle = "rgba("
-							+(255+map[x][y].chip*10)
-							+","+(255+map[x][y].chip*10)
-							+","+(255+map[x][y].chip*10)
-							+",255)";
-				}
+				//if (map[x][y].c[0].team_id == 1) {
+				//	g -= 100;
+				//	r -= 100;
+					//ctx.fillStyle = "blue";
+				//} else {
+				//	g -= 100;
+			//		b -= 100;
+					//ctx.fillStyle = "red";
+				//}
 			}
+			ctx.fillStyle = "rgba("
+				+Math.min(255, Math.max(r, 0))
+				+","+Math.min(255, Math.max(g, 0))
+				+","+Math.min(255, Math.max(b, 0))
+				+",255)";
 			ctx.fillRect(x*8, y*8, 8, 8);
 		}
 	}
@@ -55,6 +69,7 @@ function action_by_routine(chara, action) {
 		var angle = Ai.Util.getAngleByDirection(chara.currentAngle, action.target);
 		chara.angle(angle);
 	} else if (action.name == "attack") {
+		//return;
 		var range = [];
 		range.push({x:chara["_x"], y:chara["_y"]});
 		switch (chara.currentAngle) {
@@ -76,7 +91,9 @@ function action_by_routine(chara, action) {
 				var c = map_info[range[i].x][range[i].y];
 				for (var j=0; j<c.c.length; j++) {
 					if (c.c[j]["team_id"] != chara["team_id"]) {
+						c.c[j].tl().clear().scaleTo(2,200).scaleTo(1, 200);
 						c.c[j].moving = false;
+						//continue;
 						switch (chara.currentAngle) {
 							case Angle.up:
 								c.c[j].move(0, Math.max(0-c.c[j].y, -128), 20);
@@ -104,6 +121,7 @@ function action_by_routine(chara, action) {
 	}
 }
 
+var is_step;
 var game;
 var update;
 var map_info = [];
@@ -123,7 +141,8 @@ window.onload = function() {
 	var enemy_team;
 	var aiInfo;
 
-	game  = new Game(480, 480);
+	game  = new Game(320, 480);
+	game.setBgColor(0, 0, 0, 255);
 	game.preload({
 		vx: "vx.png"
 	});
@@ -136,8 +155,36 @@ window.onload = function() {
 			map_info[x][y] = {c:[], chip:0};
 		}
 	}
+	var raderHandler = new Ai.BasicRaderHandler(map_info, {width:32, height:32});
+
+	var doRoutine = function(t, chara, team_id, enemy_id, debug) {
+		if (chara.moving)
+			return;
+		if (debug)
+			raderHandler.debug = true;
+
+		raderHandler.setCharacterInfo(chara, team_id, enemy_id);
+		var aiInfo = raderHandler.search();
+
+		chara.routine.time += t;
+		while (chara.routine.time > chara.think_speed) {
+			chara.routine.time -= chara.think_speed;
+			var action = chara.routine.next(aiInfo);
+			if (action && action.name) {
+				chara.action = action;
+				chara.routine.time = 0;	//same the break;
+			}
+		}
+		delete raderHandler.debug;
+	}
 
 	update = function(t) {
+		for (var x=0; x<map_info.length; x++) {
+			for (var y=0; y<map_info[x].length; y++) {
+				map_info[x][y].chip = 0;	//clear debug
+			}
+		}
+
 		for (var i=0; i<my_team.length; i++) {
 			my_team[i]._x = Math.floor(my_team[i].x / 32);
 			my_team[i]._y = Math.floor(my_team[i].y / 32);
@@ -149,58 +196,17 @@ window.onload = function() {
 			map_info[enemy_team[i]._x][enemy_team[i]._y].c.push(enemy_team[i]);
 		}
 
-		for (var x=0; x<map_info.length; x++) {
-			for (var y=0; y<map_info.length; y++) {
-				map_info[x][y].chip = 0;
-			}
-		}
-		var raderHandler = new Ai.BasicRaderHandler(map_info);
-
 		var debug_angle;
 		var debug_action;
-		for (var i=0; i<my_team.length; i++) {
-			var my = my_team[i];
-			if (! my.moving) {
-				if (i == 0) {
-					raderHandler.debug = true;
-					debug_angle = my.currentAngle;
-				}
-				raderHandler.setCharacterInfo(my, 1, 2);
-				var aiInfo = raderHandler.search();
+		debug_angle = my_team[0].currentAngle;
 
-				my.routine.time += t;
-				while (my.routine.time > my["think_speed"]) {
-					my.routine.time -= my["think_speed"];
-					var action = my.routine.next(aiInfo);
-					if (action && action.name) {
-						if (i == 0)
-							debug_action = action;
-						my.action = action;
-					}
-				}
+		for (var i=0; i<my_team.length; i++)
+			doRoutine(t, my_team[i], 1, 2, i==0);
+		for (var i=0; i<enemy_team.length; i++)
+			doRoutine(t, enemy_team[i], 2, 1);
 
-				if (i == 0)
-					delete raderHandler.debug;
-			}
-		}
-
-		for (var i=0; i<enemy_team.length; i++) {
-			var enemy = enemy_team[i];
-			if (! enemy.moving) {
-				raderHandler.setCharacterInfo(enemy, 2, 1);
-
-				var aiInfo = raderHandler.search();
-				enemy.routine.time += t;
-				while (enemy.routine.time > enemy["think_speed"]) {
-					enemy.routine.time -= enemy["think_speed"];
-					var action = enemy.routine.next(aiInfo);
-					if (action && action.name) {
-						enemy.action = action;
-						//action_by_routine(enemy, action);
-					}
-				}
-			}
-		}
+		if (my_team[0].action)
+			debug_action = my_team[0].action;
 
 		for (var i=0; i<my_team.length; i++) {
 			if (my_team[i].action) {
@@ -216,7 +222,11 @@ window.onload = function() {
 		}
 
 		if (debug_action) {
-			drawMap(document.getElementById("raderview"), raderHandler.map.map[Angle.up]);
+			//drawMap(document.getElementById("raderview"), raderHandler.map.map[Angle.up]);
+			drawMap(document.getElementById("up"), raderHandler.map.map[Angle.up]);
+			drawMap(document.getElementById("right"), raderHandler.map.map[Angle.right]);
+			drawMap(document.getElementById("down"), raderHandler.map.map[Angle.down]);
+			drawMap(document.getElementById("left"), raderHandler.map.map[Angle.left]);
 			var txt = "";
 			txt = debug_action.name;
 			if (debug_action.name == "move" || debug_action.name == "rotate") {
@@ -234,6 +244,9 @@ window.onload = function() {
 			map_info[my_team[i]._x][my_team[i]._y].c = []
 		for (var i=0; i<enemy_team.length; i++)
 			map_info[enemy_team[i]._x][enemy_team[i]._y].c = []
+
+		if (is_step)
+			game.update.remove(update);	
 	}
 	var loaded = function() {
 		game.loaded.remove(loaded);
@@ -247,7 +260,6 @@ window.onload = function() {
 
 		my_team = []
 		f["team_id"] = 1;
-		f["routine"] = Ai.Util.routineCompile(document.getElementById("my_routine").value);
 		my_team.push(f.create(2));
 		my_team.push(f.create(0));
 		my_team.push(f.create(0));
@@ -256,7 +268,6 @@ window.onload = function() {
 
 		f.angle = Angle.down;
 		f["team_id"] = 2;
-		f["routine"] = Ai.Util.routineCompile(document.getElementById("enemy_routine").value);
 		enemy_team = [];
 		enemy_team.push(f.create(1));
 		enemy_team.push(f.create(1));
@@ -265,6 +276,10 @@ window.onload = function() {
 		enemy_team.push(f.create(1));
 
 		for (var i=0; i<my_team.length; i++) {
+			my_team[i].name = "my"+i;
+			my_team[i].routine = Ai.Util.routineCompile(document.getElementById("my_routine").value);
+			enemy_team[i].name = "enemy"+i;
+			enemy_team[i].routine = Ai.Util.routineCompile(document.getElementById("enemy_routine").value);
 			my_team[i]["think_speed"] = Math.floor(Math.random() * 21 + 5);
 			enemy_team[i]["think_speed"] = Math.floor(Math.random() * 21 + 5);
 			my_team[i]["moveTime"] = Math.floor(Math.random() * 451 + 50);
@@ -279,9 +294,11 @@ window.onload = function() {
 				Math.floor(Math.random() * (game.width-32+1)),
 				Math.floor(Math.random() * (game.height-48+1))
 			);
+			game.currentScene.root.orderDraw = JGUtil.orderDrawY;
 			game.currentScene.append(my_team[i]);
 			game.currentScene.append(enemy_team[i]);
 		}
+		my_team[0].routine.debug = true;
 
 		var renderHandle = function() {
 			game.update.handle(update);	
@@ -293,6 +310,18 @@ window.onload = function() {
 	}
 	game.loaded.handle(loaded);
 };
+function normalmode() {
+	if (is_step) {
+		game.update.handle(update);
+	}
+	is_step = false;
+}
+function stepmode() {
+	if (is_step) {
+		game.update.handle(update);
+	}
+	is_step = true;
+}
 	</script>
 </head>
 <body>
@@ -311,7 +340,7 @@ window.onload = function() {
 [判断][隣接][前][敵]
 	[攻撃][1]
 [判断][方向][敵][前]
-	[移動][前][16]
+	[移動][道][16]
 [回転][敵]
 </textarea>
 		</td>
@@ -320,7 +349,7 @@ window.onload = function() {
 [判断][隣接][前][敵]
 	[攻撃][1]
 [判断][方向][敵][前]
-	[移動][前][32]
+	[移動][道][32]
 [判断][ランダム][40][<]
 	[移動][ランダム][16]
 [回転][ランダム]
@@ -344,6 +373,12 @@ window.onload = function() {
 </div>
 <div style="float:left">
 	<div>
+	<h2>コンパネ</h2>
+	<div>
+		<input type="button" value="ステップ実行" onclick="stepmode()"/>
+		<input type="button" value="連続実行" onclick="normalmode()" />
+	</div>
+
 	<h2>基本ルール</h2>
 	<p>
 	上から順に実行。移動、回転、攻撃行動は実行後最初に戻る。<br/>
@@ -370,7 +405,33 @@ window.onload = function() {
 	</div>
 	<h2>デバッグ情報</h2>
 	<div>
-		<canvas id="raderview" width="120" height="120"></canvas>
+		<!--<canvas id="raderview" width="120" height="120"></canvas>-->
+		<table>
+			<tr>
+				<th>u</th>
+				<th>r</th>
+			</tr>
+			<tr>
+				<td>
+					<canvas id="up" width="120" height="120"></canvas>
+				</td>
+				<td>
+					<canvas id="right" width="120" height="120"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<th>d</th>
+				<th>l</th>
+			</tr>
+			<tr>
+				<td>
+					<canvas id="down" width="120" height="120"></canvas>
+				</td>
+				<td>
+					<canvas id="left" width="120" height="120"></canvas>
+				</td>
+			</tr>
+		</table>
 	</div>
 	<div id="actionview">
 	</div>

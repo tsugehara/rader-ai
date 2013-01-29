@@ -31,6 +31,8 @@ var Ai;
         Direction.Enemy = 4;
         Direction._map[5] = "Random";
         Direction.Random = 5;
+        Direction._map[6] = "Road";
+        Direction.Road = 6;
     })(Ai.Direction || (Ai.Direction = {}));
     var Direction = Ai.Direction;
     (function (ContactType) {
@@ -60,11 +62,13 @@ var Ai;
             this.time = 0;
         }
         Routine.prototype.next = function (info) {
-            if(this.index >= this.statements.length) {
-                throw "invalid status";
-            }
             var statement = this.statements[this.index];
             var action = statement.execute(info);
+            if(this.debug) {
+                var txt = [];
+                txt.push(statement["constructor"]["name"]);
+                txt.push(action ? action.name : "fail(" + statement.failStep + ")");
+            }
             if(action) {
                 if(!action.name) {
                 } else {
@@ -91,8 +95,10 @@ var Ai;
     Ai.Routine = Routine;    
     var Information = (function () {
         function Information(my) {
-            this.contacts = new Array();
-            this.directions = new Array();
+            this.contacts = {
+            };
+            this.directions = {
+            };
             this.my = my;
         }
         return Information;
@@ -153,10 +159,32 @@ var Ai;
             if(this.direction == Direction.Enemy) {
                 action.target = info.directions[ContactType.Enemy].direction;
             } else {
-                if(this.direction == Direction.Random) {
-                    action.target = Util.getRandomDirection();
+                if(this.direction == Direction.Road) {
+                    if(info.contacts[Direction.Forward] && info.contacts[Direction.Forward].type == ContactType.Road) {
+                        action.target = Direction.Forward;
+                    } else {
+                        var r = Math.random() < 0.5 ? Direction.Left : Direction.Right;
+                        var r2 = r == Direction.Left ? Direction.Right : Direction.Left;
+                        if(info.contacts[r] && info.contacts[r].type == ContactType.Road) {
+                            action.target = r;
+                        } else {
+                            if(info.contacts[r2] && info.contacts[r2].type == ContactType.Road) {
+                                action.target = r2;
+                            } else {
+                                if(info.contacts[Direction.Back] && info.contacts[Direction.Back].type == ContactType.Road) {
+                                    action.target = Direction.Back;
+                                } else {
+                                    return null;
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    action.target = this.direction;
+                    if(this.direction == Direction.Random) {
+                        action.target = Util.getRandomDirection();
+                    } else {
+                        action.target = this.direction;
+                    }
                 }
             }
             return action;
@@ -174,12 +202,22 @@ var Ai;
             action.name = "rotate";
             action.count = 1;
             if(this.direction == Direction.Enemy) {
+                if(!info.directions[ContactType.Enemy]) {
+                    return null;
+                }
                 action.target = info.directions[ContactType.Enemy].direction;
             } else {
-                if(this.direction == Direction.Random) {
-                    action.target = Util.getRandomDirection();
+                if(this.direction == Direction.Road) {
+                    if(!info.directions[ContactType.Road]) {
+                        return null;
+                    }
+                    action.target = info.directions[ContactType.Road].direction;
                 } else {
-                    action.target = this.direction;
+                    if(this.direction == Direction.Random) {
+                        action.target = Util.getRandomDirection();
+                    } else {
+                        action.target = this.direction;
+                    }
                 }
             }
             return action;
@@ -460,8 +498,8 @@ var Ai;
             if(callback.call(caller, {
                 distance: 0,
                 direction: Direction.Forward,
-                x: pos.x + this.offset.x,
-                y: pos.y + this.offset.y
+                x: this.offset.x,
+                y: this.offset.y
             }) == false) {
                 return;
             }
@@ -500,25 +538,42 @@ var Ai;
             var w = map.length;
             var h = map[0].length;
             var m = Math.max(w, h);
+            this.size = {
+                w: w,
+                h: h,
+                m: m
+            };
             var x2, y2;
-            for(var x = 0; x < w; x++) {
+            for(var x = 0; x < m; x++) {
                 this.map[Angle.down][x] = [];
                 this.map[Angle.left][x] = [];
                 this.map[Angle.right][x] = [];
-                for(var y = 0; y < h; y++) {
+                for(var y = 0; y < m; y++) {
+                    x2 = m - x - 1;
+                    y2 = m - y - 1;
+                    if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
+                        this.map[Angle.down][x][y] = map[x2][y2];
+                    } else {
+                        this.map[Angle.down][x][y] = false;
+                    }
                     x2 = y;
-                    y2 = w - x - 1;
-                    this.map[Angle.left][x][y] = map[x2][y2];
-                    x2 = y2;
-                    y2 = h - y - 1;
-                    this.map[Angle.down][x][y] = map[x2][y2];
-                    x2 = y2;
+                    y2 = m - x - 1;
+                    if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
+                        this.map[Angle.left][x][y] = map[x2][y2];
+                    } else {
+                        this.map[Angle.left][x][y] = false;
+                    }
+                    x2 = m - y - 1;
                     y2 = x;
-                    this.map[Angle.right][x][y] = map[x2][y2];
+                    if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
+                        this.map[Angle.right][x][y] = map[x2][y2];
+                    } else {
+                        this.map[Angle.right][x][y] = false;
+                    }
                 }
             }
         }
-        RotableMap.prototype.getPos = function (pos, angle, size) {
+        RotableMap.prototype.getPos = function (pos, angle) {
             switch(angle) {
                 case Angle.up: {
                     return pos;
@@ -527,20 +582,20 @@ var Ai;
                 case Angle.right: {
                     return {
                         x: pos.y,
-                        y: size.width - pos.x - 1
+                        y: this.size.m - pos.x - 1
                     };
 
                 }
                 case Angle.down: {
                     return {
-                        x: size.width - pos.x - 1,
-                        y: size.height - pos.y - 1
+                        x: this.size.m - pos.x - 1,
+                        y: this.size.m - pos.y - 1
                     };
 
                 }
                 case Angle.left: {
                     return {
-                        x: size.height - pos.y - 1,
+                        x: this.size.m - pos.y - 1,
                         y: pos.x
                     };
 
@@ -558,10 +613,11 @@ var Ai;
     })();
     Ai.RotableMap = RotableMap;    
     var BasicRaderHandler = (function () {
-        function BasicRaderHandler(baseMap) {
+        function BasicRaderHandler(baseMap, chipSize) {
             this.baseMap = baseMap;
             this.map = new RotableMap(baseMap);
             this.info = new Information();
+            this.chipSize = chipSize;
             if(!BasicRaderHandler.rader) {
                 BasicRaderHandler.rader = new Rader(Direction.Forward, Direction.Right);
                 BasicRaderHandler.rader.max = this.baseMap.length * 2;
@@ -573,12 +629,9 @@ var Ai;
             this.alliance_id = alliance_id;
             this.enemy_id = enemy_id;
             BasicRaderHandler.rader.offset = this.map.getPos({
-                x: Math.floor(this.chara.x / 32),
-                y: Math.floor(this.chara.y / 32)
-            }, this.chara.currentAngle, {
-                width: this.map.map[this.chara.currentAngle].length,
-                height: this.map.map[this.chara.currentAngle][0].length
-            });
+                x: Math.floor(this.chara.x / this.chipSize.width),
+                y: Math.floor(this.chara.y / this.chipSize.height)
+            }, this.chara.currentAngle);
             this.info = new Information(chara);
         };
         BasicRaderHandler.prototype.search = function () {
@@ -595,35 +648,36 @@ var Ai;
             }
             if(info.distance <= 1) {
                 for(var i = 0; i < chip.c.length; i++) {
-                    if(chip.c[i] == this.chara) {
+                    if(chip.c[i] == this.chara || chip.c[i].is_dead) {
                         continue;
                     }
-                    if(this.info.contacts[info.direction]) {
+                    var type = chip.c[i].team_id == this.alliance_id ? ContactType.Alliance : ContactType.Enemy;
+                    if(this.info.contacts[info.direction] && this.info.contacts[info.direction].type != ContactType.Alliance) {
+                        if(!this.info.directions[type]) {
+                            this.info.directions[type] = {
+                                direction: info.direction,
+                                data: chip.c[i]
+                            };
+                        }
                         continue;
                     }
                     var contact = {
                         data: chip.c[i],
-                        type: null
+                        type: type
                     };
-                    switch(chip.c[i].team_id) {
-                        case this.alliance_id: {
-                            contact.type = ContactType.Alliance;
-                            break;
-
-                        }
-                        case this.enemy_id: {
-                            contact.type = ContactType.Enemy;
-                            break;
-
-                        }
-                    }
                     this.info.contacts[info.direction] = contact;
-                    if(!this.info.directions[contact.type]) {
-                        this.info.directions[contact.type] = {
+                    if(!this.info.directions[type]) {
+                        this.info.directions[type] = {
                             direction: info.direction,
                             data: chip.c[i]
                         };
                     }
+                }
+                if(info.distance == 1 && !this.info.contacts[info.direction]) {
+                    this.info.contacts[info.direction] = {
+                        data: null,
+                        type: ContactType.Road
+                    };
                 }
                 return true;
             }
@@ -631,7 +685,7 @@ var Ai;
                 return false;
             }
             for(var i = 0; i < chip.c.length; i++) {
-                if(chip.c[i] == this.chara) {
+                if(chip.c[i] == this.chara || chip.c[i].is_dead) {
                     continue;
                 }
                 if(chip.c[i].team_id == this.enemy_id) {
@@ -695,6 +749,10 @@ var Ai;
                 }
                 case "ランダム": {
                     return Direction.Random;
+
+                }
+                case "道": {
+                    return Direction.Road;
 
                 }
             }

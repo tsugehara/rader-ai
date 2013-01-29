@@ -12,7 +12,8 @@ module Ai {
 		Right,
 		Back,
 		Enemy,
-		Random
+		Random,
+		Road
 	}
 
 	export enum ContactType {
@@ -28,6 +29,16 @@ module Ai {
 		direction: Direction;
 		x: number;
 		y: number;
+	}
+
+	export interface ContactData {
+		data: any;	//元データ
+		type: ContactType;
+	}
+
+	export interface DirectionData {
+		data: any;	//判断要素のなった対象の元データ
+		direction: Direction;
 	}
 
 	export class Action {
@@ -48,6 +59,7 @@ module Ai {
 		index:number;
 		action:Action;
 		time:number;
+		debug:bool;
 
 		constructor() {
 			this.statements = new Statement[];
@@ -56,11 +68,16 @@ module Ai {
 		}
 
 		next(info:Information):Action {
-			if (this.index >= this.statements.length)
-				throw "invalid status";
-
 			var statement = this.statements[this.index];
 			var action = statement.execute(info);
+			if (this.debug) {
+				//if (action && action.name) {
+					var txt = [];
+					txt.push(statement["constructor"]["name"]);
+					txt.push(action ? action.name : "fail("+statement.failStep+")");
+					//console.log(txt.join(","));
+				//}
+			}
 			if (action) {
 				//Empty action判定（条件分岐通過など）
 				if (! action.name) {
@@ -87,26 +104,17 @@ module Ai {
 		}
 	}
 
-	export interface ContactData {
-		data: any;	//元データ
-		type: ContactType;
-	}
-	export interface DirectionData {
-		data: any;	//判断要素のなった対象の元データ
-		direction: Direction;
-	}
-
 	export class Information {
 		//接触しているもの
-		contacts:ContactData[];	//key: Direction
+		contacts:any;//ContactData[];	//key: Direction, value: ContactData
 		//敵とか味方とかの方向
-		directions:DirectionData[];	//key: ContactType
+		directions:any;//DirectionData[];	//key: ContactType, value: DirectionData
 		//自分自身
 		my:any;
 
 		constructor(my?:any) {
-			this.contacts = new ContactData[];
-			this.directions = new DirectionData[];
+			this.contacts = {};
+			this.directions = {};
 			this.my = my;
 		}
 	}
@@ -174,6 +182,22 @@ module Ai {
 			action.count = this.count;
 			if (this.direction == Direction.Enemy) {
 				action.target = info.directions[ContactType.Enemy].direction;
+			} else if (this.direction == Direction.Road) {
+				if (info.contacts[Direction.Forward] && info.contacts[Direction.Forward].type == ContactType.Road) {
+					action.target = Direction.Forward;
+				} else {
+					var r = Math.random() < 0.5 ? Direction.Left : Direction.Right;
+					var r2 = r == Direction.Left ? Direction.Right : Direction.Left;
+					if (info.contacts[r] && info.contacts[r].type == ContactType.Road) {
+						action.target = r;
+					} else if (info.contacts[r2] && info.contacts[r2].type == ContactType.Road) {
+						action.target = r2;
+					} else if (info.contacts[Direction.Back] && info.contacts[Direction.Back].type == ContactType.Road) {
+						action.target = Direction.Back;
+					} else {
+						return null;
+					}
+				}
 			} else if (this.direction == Direction.Random) {
 				action.target = Util.getRandomDirection();
 			} else {
@@ -196,7 +220,13 @@ module Ai {
 			action.name = "rotate";
 			action.count = 1;
 			if (this.direction == Direction.Enemy) {
+				if (! info.directions[ContactType.Enemy])
+					return null;
 				action.target = info.directions[ContactType.Enemy].direction;
+			} else if (this.direction == Direction.Road) {
+				if (! info.directions[ContactType.Road])
+					return null;
+				action.target = info.directions[ContactType.Road].direction;
 			} else if (this.direction == Direction.Random) {
 				action.target = Util.getRandomDirection();
 			} else {
@@ -243,8 +273,9 @@ module Ai {
 
 		check(info:Information) {
 			var contact = info.contacts[this.direction];
-			if (contact == undefined)
+			if (contact == undefined) {
 				return false;
+			}
 			if (contact.type == this.type) {
 				if (this.prop) {
 					switch (this.operator) {
@@ -418,8 +449,8 @@ module Ai {
 			if (callback.call(caller, {
 					distance: 0,
 					direction: Direction.Forward,
-					x: pos.x+this.offset.x,
-					y: pos.y+this.offset.y
+					x: this.offset.x,
+					y: this.offset.y
 				}) == false)
 				return;
 
@@ -456,6 +487,7 @@ module Ai {
 	//レーダーで用いるためのマップ
 	export class RotableMap {
 		map:any[][][];
+		size:any;
 		constructor(map:any[][]) {
 			this.map = [];
 			this.map[Angle.up] = map;
@@ -465,44 +497,59 @@ module Ai {
 			var w = map.length;
 			var h = map[0].length;
 			var m = Math.max(w, h);
+			this.size = {
+				w: w,
+				h: h,
+				m: m
+			}
 			var x2, y2;
-			for (var x = 0; x < w; x++) {
+			for (var x = 0; x < m; x++) {
 				this.map[Angle.down][x] = [];
 				this.map[Angle.left][x] = [];
 				this.map[Angle.right][x] = [];
-				for (var y = 0; y < h; y++) {
+
+				for (var y = 0; y < m; y++) {
+					x2 = m - x - 1;
+					y2 = m - y - 1;
+					if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
+						this.map[Angle.down ][x][y] = map[x2][y2];
+					else
+						this.map[Angle.down ][x][y] = false;
+
 					x2 = y;
-					y2 = w - x - 1;
-					this.map[Angle.left ][x][y] = map[x2][y2];
+					y2 = m - x - 1;
+					if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
+						this.map[Angle.left ][x][y] = map[x2][y2];
+					else 
+						this.map[Angle.left ][x][y] = false;
 
-					x2 = y2;	//w-x-1
-					y2 = h - y - 1;
-					this.map[Angle.down ][x][y] = map[x2][y2];
-
-					x2 = y2;	//h-y-1
+					x2 = m - y - 1;
 					y2 = x;
-					this.map[Angle.right][x][y] = map[x2][y2];
+					if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
+						this.map[Angle.right][x][y] = map[x2][y2];
+					else
+						this.map[Angle.right][x][y] = false;
 				}
 			}
 		}
 
-		getPos(pos:CommonOffset, angle:Angle, size:CommonSize):CommonOffset {
+		getPos(pos:CommonOffset, angle:Angle):CommonOffset {
 			switch(angle) {
 				case Angle.up:
 					return pos;
 				case Angle.right:
 					return {
 						x: pos.y,
-						y: size.width-pos.x-1
+						y: this.size.m-pos.x-1
 					}
 				case Angle.down:
 					return {
-						x: size.width-pos.x-1,
-						y: size.height-pos.y-1
+						x: this.size.m-pos.x-1,
+						y: this.size.m-pos.y-1
 					}
 				case Angle.left:
 					return {
-						x: size.height - pos.y - 1,
+						x: this.size.m - pos.y - 1,
 						y: pos.x
 					}
 			}
@@ -518,8 +565,14 @@ module Ai {
 	}
 
 	//BasicRaderHandlerで使うためのマップチップ構成
+	export interface BasicCharacter {
+		team_id: number;
+		is_dead: bool;
+		x: number;
+		y: number;
+	}
 	export interface BasicMapChip {
-		c:any[];
+		c:BasicCharacter[];
 		chip:any;
 	}
 
@@ -534,11 +587,13 @@ module Ai {
 		chara:Character;
 		debug:bool;
 		debugInfo:number[][];
+		chipSize: CommonSize;
 
-		constructor(baseMap:BasicMapChip[][]) {
+		constructor(baseMap:BasicMapChip[][], chipSize:CommonSize) {
 			this.baseMap = baseMap;
 			this.map = new RotableMap(baseMap);
 			this.info = new Information();
+			this.chipSize = chipSize;
 			if (! BasicRaderHandler.rader) {
 				BasicRaderHandler.rader = new Rader(Direction.Forward, Direction.Right);
 				BasicRaderHandler.rader.max = this.baseMap.length * 2;
@@ -551,14 +606,10 @@ module Ai {
 			this.enemy_id = enemy_id;
 			BasicRaderHandler.rader.offset = this.map.getPos(
 				{
-					x: Math.floor(this.chara.x / 32),
-					y: Math.floor(this.chara.y / 32)
+					x: Math.floor(this.chara.x / this.chipSize.width),
+					y: Math.floor(this.chara.y / this.chipSize.height)
 				},
-				this.chara.currentAngle,
-				{
-					width: this.map.map[this.chara.currentAngle].length,
-					height: this.map.map[this.chara.currentAngle][0].length
-				}
+				this.chara.currentAngle
 			);
 			this.info = new Information(chara);
 		}
@@ -578,31 +629,29 @@ module Ai {
 
 			if (info.distance <= 1) {
 				for (var i=0; i<chip.c.length; i++) {
-					if (chip.c[i] == this.chara)
+					if (chip.c[i] == this.chara || chip.c[i].is_dead)
 						continue;
-					//先優先
-					if (this.info.contacts[info.direction])
+					var type = chip.c[i].team_id == this.alliance_id ? ContactType.Alliance : ContactType.Enemy;
+					//先優先（ただし仲間の場合は上書き）
+					if (this.info.contacts[info.direction] && this.info.contacts[info.direction].type != ContactType.Alliance) {
+						if (! this.info.directions[type]) {
+							this.info.directions[type] = {direction: info.direction, data: chip.c[i]}
+						}
 						continue;
+					}
 					var contact:ContactData = {
 						data: chip.c[i],
-						type: null
-					}
-					switch (chip.c[i].team_id) {
-					case this.alliance_id:
-						contact.type = ContactType.Alliance;
-					break;
-					case this.enemy_id:
-						contact.type = ContactType.Enemy;
-					break;
+						type: type
 					}
 
 					this.info.contacts[info.direction] = contact;
-					if (! this.info.directions[contact.type])
-						this.info.directions[contact.type] = {
-							direction: info.direction,
-							data: chip.c[i]
-						}
+					if (! this.info.directions[type])
+						this.info.directions[type] = {direction: info.direction, data: chip.c[i]}
 				}
+
+				if (info.distance == 1 && !this.info.contacts[info.direction])
+					this.info.contacts[info.direction] = {data:null, type:ContactType.Road};
+
 				return true;
 			}
 
@@ -611,7 +660,7 @@ module Ai {
 				return false;
 
 			for (var i=0; i<chip.c.length; i++) {
-				if (chip.c[i] == this.chara)
+				if (chip.c[i] == this.chara || chip.c[i].is_dead)
 					continue;
 				if (chip.c[i].team_id == this.enemy_id) {
 					this.info.directions[ContactType.Enemy] = {
@@ -661,6 +710,8 @@ module Ai {
 					return Direction.Enemy;
 				case "ランダム":
 					return Direction.Random;
+				case "道":
+					return Direction.Road;
 			}
 			throw "error";
 		}
