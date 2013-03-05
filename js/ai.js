@@ -158,34 +158,26 @@ var Ai;
             action.count = this.count;
             if(this.direction == Direction.Enemy) {
                 action.target = info.directions[ContactType.Enemy].direction;
-            } else {
-                if(this.direction == Direction.Road) {
-                    if(info.contacts[Direction.Forward] && info.contacts[Direction.Forward].type == ContactType.Road) {
-                        action.target = Direction.Forward;
-                    } else {
-                        var r = Math.random() < 0.5 ? Direction.Left : Direction.Right;
-                        var r2 = r == Direction.Left ? Direction.Right : Direction.Left;
-                        if(info.contacts[r] && info.contacts[r].type == ContactType.Road) {
-                            action.target = r;
-                        } else {
-                            if(info.contacts[r2] && info.contacts[r2].type == ContactType.Road) {
-                                action.target = r2;
-                            } else {
-                                if(info.contacts[Direction.Back] && info.contacts[Direction.Back].type == ContactType.Road) {
-                                    action.target = Direction.Back;
-                                } else {
-                                    return null;
-                                }
-                            }
-                        }
-                    }
+            } else if(this.direction == Direction.Road) {
+                if(info.contacts[Direction.Forward] && info.contacts[Direction.Forward].type == ContactType.Road) {
+                    action.target = Direction.Forward;
                 } else {
-                    if(this.direction == Direction.Random) {
-                        action.target = Util.getRandomDirection();
+                    var r = Math.random() < 0.5 ? Direction.Left : Direction.Right;
+                    var r2 = r == Direction.Left ? Direction.Right : Direction.Left;
+                    if(info.contacts[r] && info.contacts[r].type == ContactType.Road) {
+                        action.target = r;
+                    } else if(info.contacts[r2] && info.contacts[r2].type == ContactType.Road) {
+                        action.target = r2;
+                    } else if(info.contacts[Direction.Back] && info.contacts[Direction.Back].type == ContactType.Road) {
+                        action.target = Direction.Back;
                     } else {
-                        action.target = this.direction;
+                        return null;
                     }
                 }
+            } else if(this.direction == Direction.Random) {
+                action.target = Util.getRandomDirection();
+            } else {
+                action.target = this.direction;
             }
             return action;
         };
@@ -206,19 +198,15 @@ var Ai;
                     return null;
                 }
                 action.target = info.directions[ContactType.Enemy].direction;
-            } else {
-                if(this.direction == Direction.Road) {
-                    if(!info.directions[ContactType.Road]) {
-                        return null;
-                    }
-                    action.target = info.directions[ContactType.Road].direction;
-                } else {
-                    if(this.direction == Direction.Random) {
-                        action.target = Util.getRandomDirection();
-                    } else {
-                        action.target = this.direction;
-                    }
+            } else if(this.direction == Direction.Road) {
+                if(!info.directions[ContactType.Road]) {
+                    return null;
                 }
+                action.target = info.directions[ContactType.Road].direction;
+            } else if(this.direction == Direction.Random) {
+                action.target = Util.getRandomDirection();
+            } else {
+                action.target = this.direction;
             }
             return action;
         };
@@ -255,22 +243,14 @@ var Ai;
             if(contact.type == this.type) {
                 if(this.prop) {
                     switch(this.operator) {
-                        case Operator.Equal: {
+                        case Operator.Equal:
                             return contact.data[this.prop] == this.value;
-
-                        }
-                        case Operator.Over: {
+                        case Operator.Over:
                             return contact.data[this.prop] > this.value;
-
-                        }
-                        case Operator.Under: {
+                        case Operator.Under:
                             return contact.data[this.prop] < this.value;
-
-                        }
-                        case Operator.Not: {
+                        case Operator.Not:
                             return contact.data[this.prop] != this.value;
-
-                        }
                     }
                 }
                 return true;
@@ -295,22 +275,14 @@ var Ai;
             }
             if(this.prop) {
                 switch(this.operator) {
-                    case Operator.Equal: {
+                    case Operator.Equal:
                         return d.data[this.prop] == this.value;
-
-                    }
-                    case Operator.Over: {
+                    case Operator.Over:
                         return d.data[this.prop] > this.value;
-
-                    }
-                    case Operator.Under: {
+                    case Operator.Under:
                         return d.data[this.prop] < this.value;
-
-                    }
-                    case Operator.Not: {
+                    case Operator.Not:
                         return d.data[this.prop] != this.value;
-
-                    }
                 }
             }
             return true;
@@ -325,22 +297,14 @@ var Ai;
         }
         MyConditionStatement.prototype.check = function (info) {
             switch(this.operator) {
-                case Operator.Equal: {
+                case Operator.Equal:
                     return info.my.data[this.prop] == this.value;
-
-                }
-                case Operator.Over: {
+                case Operator.Over:
                     return info.my.data[this.prop] > this.value;
-
-                }
-                case Operator.Under: {
+                case Operator.Under:
                     return info.my.data[this.prop] < this.value;
-
-                }
-                case Operator.Not: {
+                case Operator.Not:
                     return info.my.data[this.prop] != this.value;
-
-                }
             }
             return false;
         };
@@ -355,22 +319,14 @@ var Ai;
         RandomConditionStatement.prototype.check = function (info) {
             var r = Math.floor(Math.random() * 100);
             switch(this.operator) {
-                case Operator.Equal: {
+                case Operator.Equal:
                     return r == this.value;
-
-                }
-                case Operator.Over: {
+                case Operator.Over:
                     return r > this.value;
-
-                }
-                case Operator.Under: {
+                case Operator.Under:
                     return r < this.value;
-
-                }
-                case Operator.Not: {
+                case Operator.Not:
                     return r != this.value;
-
-                }
             }
             return false;
         };
@@ -408,43 +364,39 @@ var Ai;
                     y: 0,
                     d: Direction.Left
                 });
+            } else if(this.rotateDirection == Direction.Left) {
+                this.sequence.push({
+                    x: 0,
+                    y: -1,
+                    d: Direction.Forward
+                });
+                this.sequence.push({
+                    x: -1,
+                    y: 0,
+                    d: Direction.Left
+                });
+                this.sequence.push({
+                    x: 0,
+                    y: 1,
+                    d: Direction.Back
+                });
+                this.sequence.push({
+                    x: 1,
+                    y: 0,
+                    d: Direction.Right
+                });
             } else {
-                if(this.rotateDirection == Direction.Left) {
-                    this.sequence.push({
-                        x: 0,
-                        y: -1,
-                        d: Direction.Forward
-                    });
-                    this.sequence.push({
-                        x: -1,
-                        y: 0,
-                        d: Direction.Left
-                    });
-                    this.sequence.push({
-                        x: 0,
-                        y: 1,
-                        d: Direction.Back
-                    });
-                    this.sequence.push({
-                        x: 1,
-                        y: 0,
-                        d: Direction.Right
-                    });
-                } else {
-                    throw "Invalid rotateDirection. (Only right or left)";
-                }
+                throw "Invalid rotateDirection. (Only right or left)";
             }
             switch(this.firstDirection) {
-                case Direction.Forward: {
+                case Direction.Forward:
                     this.sequence.push({
                         x: 0,
                         y: -1,
                         d: Direction.Forward
                     });
                     break;
-
-                }
-                case Direction.Right: {
+                case Direction.Right:
                     if(this.rotateDirection == Direction.Right) {
                         this.sequence.push(this.sequence.shift());
                     } else {
@@ -458,9 +410,7 @@ var Ai;
                         d: Direction.Right
                     });
                     break;
-
-                }
-                case Direction.Back: {
+                case Direction.Back:
                     this.sequence.push(this.sequence.shift());
                     this.sequence.push(this.sequence.shift());
                     this.sequence.push({
@@ -469,9 +419,7 @@ var Ai;
                         d: Direction.Back
                     });
                     break;
-
-                }
-                case Direction.Left: {
+                case Direction.Left:
                     if(this.rotateDirection == Direction.Right) {
                         this.sequence.push(this.sequence.shift());
                         this.sequence.push(this.sequence.shift());
@@ -485,8 +433,6 @@ var Ai;
                         d: Direction.Left
                     });
                     break;
-
-                }
             }
         }
         Rader.prototype.search = function (caller, callback) {
@@ -523,7 +469,7 @@ var Ai;
                     }
                 }
                 power++;
-            }while(power < this.max)
+            }while(power < this.max);
         };
         return Rader;
     })();
@@ -575,31 +521,23 @@ var Ai;
         }
         RotableMap.prototype.getPos = function (pos, angle) {
             switch(angle) {
-                case Angle.up: {
+                case Angle.up:
                     return pos;
-
-                }
-                case Angle.right: {
+                case Angle.right:
                     return {
                         x: pos.y,
                         y: this.size.m - pos.x - 1
                     };
-
-                }
-                case Angle.down: {
+                case Angle.down:
                     return {
                         x: this.size.m - pos.x - 1,
                         y: this.size.m - pos.y - 1
                     };
-
-                }
-                case Angle.left: {
+                case Angle.left:
                     return {
                         x: this.size.m - pos.y - 1,
                         y: pos.x
                     };
-
-                }
             }
             throw "invalid parameter";
         };
@@ -623,7 +561,6 @@ var Ai;
                 BasicRaderHandler.rader.max = this.baseMap.length * 2;
             }
         }
-        BasicRaderHandler.rader = null;
         BasicRaderHandler.prototype.setCharacterInfo = function (chara, alliance_id, enemy_id) {
             this.chara = chara;
             this.alliance_id = alliance_id;
@@ -716,7 +653,7 @@ var Ai;
                 }
             }
             return ret;
-        }
+        };
         Util.countTab = function countTab(s) {
             for(var i = 0; i < s.length; i++) {
                 if(s.charCodeAt(i) != 9) {
@@ -724,80 +661,50 @@ var Ai;
                 }
             }
             return 0;
-        }
+        };
         Util.getDirectionByText = function getDirectionByText(s) {
             switch(s) {
-                case "前": {
+                case "前":
                     return Direction.Forward;
-
-                }
-                case "右": {
+                case "右":
                     return Direction.Right;
-
-                }
-                case "左": {
+                case "左":
                     return Direction.Left;
-
-                }
-                case "後": {
+                case "後":
                     return Direction.Back;
-
-                }
-                case "敵": {
+                case "敵":
                     return Direction.Enemy;
-
-                }
-                case "ランダム": {
+                case "ランダム":
                     return Direction.Random;
-
-                }
-                case "道": {
+                case "道":
                     return Direction.Road;
-
-                }
             }
             throw "error";
-        }
+        };
         Util.getContactTypeByText = function getContactTypeByText(s) {
             switch(s) {
-                case "敵": {
+                case "敵":
                     return ContactType.Enemy;
-
-                }
-                case "味方": {
+                case "味方":
                     return ContactType.Alliance;
-
-                }
-                case "道": {
+                case "道":
                     return ContactType.Road;
-
-                }
-                case "壁": {
+                case "壁":
                     return ContactType.Wall;
-
-                }
             }
-        }
+        };
         Util.getOperatorByText = function getOperatorByText(s) {
             switch(s) {
-                case ">": {
+                case ">":
                     return Operator.Over;
-
-                }
-                case "<": {
+                case "<":
                     return Operator.Under;
-
-                }
-                case "=": {
+                case "=":
                     return Operator.Equal;
-
-                }
-                case "!": {
+                case "!":
                     return Operator.Not;
-
-                }
             }
-        }
+        };
         Util.statementCompile = function statementCompile(s) {
             var markup = new RegExp("\\[([^\\]]+)\\]", "ig");
             var statementText = s.text.match(markup);
@@ -816,53 +723,41 @@ var Ai;
                         statement.value = parseInt(l[5]);
                         statement.operator = Util.getOperatorByText(l[6]);
                     }
-                } else {
-                    if(l[1] == "方向") {
-                        statement = new DirectionConditionStatement();
-                        statement.type = Util.getContactTypeByText(l[2]);
-                        statement.direction = Util.getDirectionByText(l[3]);
-                        if(l.length > 4) {
-                            statement.prop = l[4];
-                            statement.value = parseInt(l[5]);
-                            statement.operator = Util.getOperatorByText(l[6]);
-                        }
-                    } else {
-                        if(l[1] == "自分") {
-                            statement = new MyConditionStatement();
-                            statement.prop = l[2];
-                            statement.value = parseInt(l[3]);
-                            statement.operator = Util.getOperatorByText(l[4]);
-                        } else {
-                            if(l[1] == "ランダム") {
-                                statement = new RandomConditionStatement();
-                                statement.value = parseInt(l[2]);
-                                statement.operator = Util.getOperatorByText(l[3]);
-                            }
-                        }
+                } else if(l[1] == "方向") {
+                    statement = new DirectionConditionStatement();
+                    statement.type = Util.getContactTypeByText(l[2]);
+                    statement.direction = Util.getDirectionByText(l[3]);
+                    if(l.length > 4) {
+                        statement.prop = l[4];
+                        statement.value = parseInt(l[5]);
+                        statement.operator = Util.getOperatorByText(l[6]);
                     }
+                } else if(l[1] == "自分") {
+                    statement = new MyConditionStatement();
+                    statement.prop = l[2];
+                    statement.value = parseInt(l[3]);
+                    statement.operator = Util.getOperatorByText(l[4]);
+                } else if(l[1] == "ランダム") {
+                    statement = new RandomConditionStatement();
+                    statement.value = parseInt(l[2]);
+                    statement.operator = Util.getOperatorByText(l[3]);
                 }
-            } else {
-                if(l[0] == "移動") {
-                    statement = new MoveStatement();
-                    statement.direction = Util.getDirectionByText(l[1]);
-                    statement.count = parseInt(l[2]);
-                } else {
-                    if(l[0] == "回転") {
-                        statement = new RotateStatement();
-                        statement.direction = Util.getDirectionByText(l[1]);
-                    } else {
-                        if(l[0] == "攻撃") {
-                            statement = new AttackStatement();
-                            statement.count = parseInt(l[1]);
-                        }
-                    }
-                }
+            } else if(l[0] == "移動") {
+                statement = new MoveStatement();
+                statement.direction = Util.getDirectionByText(l[1]);
+                statement.count = parseInt(l[2]);
+            } else if(l[0] == "回転") {
+                statement = new RotateStatement();
+                statement.direction = Util.getDirectionByText(l[1]);
+            } else if(l[0] == "攻撃") {
+                statement = new AttackStatement();
+                statement.count = parseInt(l[1]);
             }
             if(s.fail_step > 1) {
                 statement.failStep = s.fail_step;
             }
             return statement;
-        }
+        };
         Util.routineCompile = function routineCompile(s) {
             var lines = Util.splitText(s);
             var routine = new Routine();
@@ -893,138 +788,86 @@ var Ai;
                 routine.statements.push(statement);
             }
             return routine;
-        }
+        };
         Util.getAngleByDirection = function getAngleByDirection(angle, direction) {
             switch(direction) {
-                case Direction.Forward: {
+                case Direction.Forward:
                     return angle;
                     break;
-
-                }
-                case Direction.Right: {
+                case Direction.Right:
                     switch(angle) {
-                        case Angle.up: {
+                        case Angle.up:
                             return Angle.right;
-
-                        }
-                        case Angle.down: {
+                        case Angle.down:
                             return Angle.left;
-
-                        }
-                        case Angle.right: {
+                        case Angle.right:
                             return Angle.down;
-
-                        }
-                        case Angle.left: {
+                        case Angle.left:
                             return Angle.up;
-
-                        }
                     }
                     break;
-
-                }
-                case Direction.Left: {
+                case Direction.Left:
                     switch(angle) {
-                        case Angle.up: {
+                        case Angle.up:
                             return Angle.left;
-
-                        }
-                        case Angle.down: {
+                        case Angle.down:
                             return Angle.right;
-
-                        }
-                        case Angle.right: {
+                        case Angle.right:
                             return Angle.up;
-
-                        }
-                        case Angle.left: {
+                        case Angle.left:
                             return Angle.down;
-
-                        }
                     }
                     break;
-
-                }
-                case Direction.Back: {
+                case Direction.Back:
                     switch(angle) {
-                        case Angle.up: {
+                        case Angle.up:
                             return Angle.down;
-
-                        }
-                        case Angle.down: {
+                        case Angle.down:
                             return Angle.up;
-
-                        }
-                        case Angle.right: {
+                        case Angle.right:
                             return Angle.left;
-
-                        }
-                        case Angle.left: {
+                        case Angle.left:
                             return Angle.right;
-
-                        }
                     }
                     break;
-
-                }
             }
-        }
+        };
         Util.getAngleString = function getAngleString(angle) {
             switch(angle) {
-                case Angle.up: {
+                case Angle.up:
                     return "Up";
-
-                }
-                case Angle.down: {
+                case Angle.down:
                     return "Down";
-
-                }
-                case Angle.left: {
+                case Angle.left:
                     return "Left";
-
-                }
-                case Angle.right: {
+                case Angle.right:
                     return "Right";
-
-                }
             }
-        }
+        };
         Util.getDirectionString = function getDirectionString(direction) {
             switch(direction) {
-                case Direction.Forward: {
+                case Direction.Forward:
                     return "Forward";
-
-                }
-                case Direction.Back: {
+                case Direction.Back:
                     return "Back";
-
-                }
-                case Direction.Left: {
+                case Direction.Left:
                     return "Left";
-
-                }
-                case Direction.Right: {
+                case Direction.Right:
                     return "Right";
-
-                }
             }
-        }
+        };
         Util.getRandomDirection = function getRandomDirection() {
             var r = Math.floor(Math.random() * 100);
             if(r < 25) {
                 return Direction.Forward;
+            } else if(r < 50) {
+                return Direction.Back;
+            } else if(r < 75) {
+                return Direction.Right;
             } else {
-                if(r < 50) {
-                    return Direction.Back;
-                } else {
-                    if(r < 75) {
-                        return Direction.Right;
-                    } else {
-                        return Direction.Left;
-                    }
-                }
+                return Direction.Left;
             }
-        }
+        };
         return Util;
     })();
     Ai.Util = Util;    

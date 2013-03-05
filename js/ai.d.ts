@@ -39,7 +39,7 @@ module Ai {
         public name: string;
         public count: number;
         public target: any;
-        constructor ();
+        constructor();
     }
     class Routine {
         public statements: Statement[];
@@ -47,7 +47,7 @@ module Ai {
         public action: Action;
         public time: number;
         public debug: bool;
-        constructor ();
+        constructor();
         public next(info: Information): Action;
         public reset(): void;
     }
@@ -55,34 +55,34 @@ module Ai {
         public contacts: any;
         public directions: any;
         public my: any;
-        constructor (my?: any);
+        constructor(my?: any);
     }
     class Statement {
         public failStep: number;
-        constructor ();
+        constructor();
         public execute(info: Information);
         public postExecute(routine: Routine): void;
     }
     class ActionStatement extends Statement {
         public postReturn: bool;
-        constructor ();
+        constructor();
         public execute(info: Information);
         public postExecute(routine: Routine): void;
     }
     class AttackStatement extends ActionStatement {
         public count: number;
-        constructor ();
+        constructor();
         public execute(info: Information): Action;
     }
     class MoveStatement extends ActionStatement {
         public count: number;
         public direction: Direction;
-        constructor ();
+        constructor();
         public execute(info: Information): Action;
     }
     class RotateStatement extends ActionStatement {
         public direction: Direction;
-        constructor ();
+        constructor();
         public execute(info: Information): Action;
     }
     class ConditionStatement extends Statement {
@@ -91,24 +91,24 @@ module Ai {
         public prop: string;
         public value: number;
         public operator: Operator;
-        constructor ();
+        constructor();
         public execute(info: Information): Action;
         public check(info: Information): bool;
     }
     class ContactConditionStatement extends ConditionStatement {
-        constructor ();
+        constructor();
         public check(info: Information): bool;
     }
     class DirectionConditionStatement extends ConditionStatement {
-        constructor ();
+        constructor();
         public check(info: Information): bool;
     }
     class MyConditionStatement extends ConditionStatement {
-        constructor ();
+        constructor();
         public check(info: Information): bool;
     }
     class RandomConditionStatement extends ConditionStatement {
-        constructor ();
+        constructor();
         public check(info: Information): bool;
     }
     class Rader {
@@ -117,13 +117,13 @@ module Ai {
         public sequence: any[];
         public firstDirection: Direction;
         public rotateDirection: Direction;
-        constructor (firstDirection: Direction, rotateDirection: Direction);
+        constructor(firstDirection: Direction, rotateDirection: Direction);
         public search(caller: any, callback: Function): void;
     }
     class RotableMap {
         public map: any[][][];
         public size: any;
-        constructor (map: any[][]);
+        constructor(map: any[][]);
         public getPos(pos: CommonOffset, angle: Angle): CommonOffset;
         public get(x: number, y: number, angle: Angle);
     }
@@ -148,7 +148,7 @@ module Ai {
         public debug: bool;
         public debugInfo: number[][];
         public chipSize: CommonSize;
-        constructor (baseMap: BasicMapChip[][], chipSize: CommonSize);
+        constructor(baseMap: BasicMapChip[][], chipSize: CommonSize);
         public setCharacterInfo(chara: Character, alliance_id: number, enemy_id: number): void;
         public search(): Information;
         public raderCallback(info: RaderInfo): bool;
