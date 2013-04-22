@@ -477,10 +477,10 @@ var Ai;
     var RotableMap = (function () {
         function RotableMap(map) {
             this.map = [];
-            this.map[Angle.up] = map;
-            this.map[Angle.down] = [];
-            this.map[Angle.left] = [];
-            this.map[Angle.right] = [];
+            this.map[jg.Angle.Up] = map;
+            this.map[jg.Angle.Down] = [];
+            this.map[jg.Angle.Left] = [];
+            this.map[jg.Angle.Right] = [];
             var w = map.length;
             var h = map[0].length;
             var m = Math.max(w, h);
@@ -491,49 +491,49 @@ var Ai;
             };
             var x2, y2;
             for(var x = 0; x < m; x++) {
-                this.map[Angle.down][x] = [];
-                this.map[Angle.left][x] = [];
-                this.map[Angle.right][x] = [];
+                this.map[jg.Angle.Down][x] = [];
+                this.map[jg.Angle.Left][x] = [];
+                this.map[jg.Angle.Right][x] = [];
                 for(var y = 0; y < m; y++) {
                     x2 = m - x - 1;
                     y2 = m - y - 1;
                     if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
-                        this.map[Angle.down][x][y] = map[x2][y2];
+                        this.map[jg.Angle.Down][x][y] = map[x2][y2];
                     } else {
-                        this.map[Angle.down][x][y] = false;
+                        this.map[jg.Angle.Down][x][y] = false;
                     }
                     x2 = y;
                     y2 = m - x - 1;
                     if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
-                        this.map[Angle.left][x][y] = map[x2][y2];
+                        this.map[jg.Angle.Left][x][y] = map[x2][y2];
                     } else {
-                        this.map[Angle.left][x][y] = false;
+                        this.map[jg.Angle.Left][x][y] = false;
                     }
                     x2 = m - y - 1;
                     y2 = x;
                     if(x2 < w && y2 < h && x2 >= 0 && y2 >= 0) {
-                        this.map[Angle.right][x][y] = map[x2][y2];
+                        this.map[jg.Angle.Right][x][y] = map[x2][y2];
                     } else {
-                        this.map[Angle.right][x][y] = false;
+                        this.map[jg.Angle.Right][x][y] = false;
                     }
                 }
             }
         }
         RotableMap.prototype.getPos = function (pos, angle) {
             switch(angle) {
-                case Angle.up:
+                case jg.Angle.Up:
                     return pos;
-                case Angle.right:
+                case jg.Angle.Right:
                     return {
                         x: pos.y,
                         y: this.size.m - pos.x - 1
                     };
-                case Angle.down:
+                case jg.Angle.Down:
                     return {
                         x: this.size.m - pos.x - 1,
                         y: this.size.m - pos.y - 1
                     };
-                case Angle.left:
+                case jg.Angle.Left:
                     return {
                         x: this.size.m - pos.y - 1,
                         y: pos.x
@@ -796,51 +796,51 @@ var Ai;
                     break;
                 case Direction.Right:
                     switch(angle) {
-                        case Angle.up:
-                            return Angle.right;
-                        case Angle.down:
-                            return Angle.left;
-                        case Angle.right:
-                            return Angle.down;
-                        case Angle.left:
-                            return Angle.up;
+                        case jg.Angle.Up:
+                            return jg.Angle.Right;
+                        case jg.Angle.Down:
+                            return jg.Angle.Left;
+                        case jg.Angle.Right:
+                            return jg.Angle.Down;
+                        case jg.Angle.Left:
+                            return jg.Angle.Up;
                     }
                     break;
                 case Direction.Left:
                     switch(angle) {
-                        case Angle.up:
-                            return Angle.left;
-                        case Angle.down:
-                            return Angle.right;
-                        case Angle.right:
-                            return Angle.up;
-                        case Angle.left:
-                            return Angle.down;
+                        case jg.Angle.Up:
+                            return jg.Angle.Left;
+                        case jg.Angle.Down:
+                            return jg.Angle.Right;
+                        case jg.Angle.Right:
+                            return jg.Angle.Up;
+                        case jg.Angle.Left:
+                            return jg.Angle.Down;
                     }
                     break;
                 case Direction.Back:
                     switch(angle) {
-                        case Angle.up:
-                            return Angle.down;
-                        case Angle.down:
-                            return Angle.up;
-                        case Angle.right:
-                            return Angle.left;
-                        case Angle.left:
-                            return Angle.right;
+                        case jg.Angle.Up:
+                            return jg.Angle.Down;
+                        case jg.Angle.Down:
+                            return jg.Angle.Up;
+                        case jg.Angle.Right:
+                            return jg.Angle.Left;
+                        case jg.Angle.Left:
+                            return jg.Angle.Right;
                     }
                     break;
             }
         };
         Util.getAngleString = function getAngleString(angle) {
             switch(angle) {
-                case Angle.up:
+                case jg.Angle.Up:
                     return "Up";
-                case Angle.down:
+                case jg.Angle.Down:
                     return "Down";
-                case Angle.left:
+                case jg.Angle.Left:
                     return "Left";
-                case Angle.right:
+                case jg.Angle.Right:
                     return "Right";
             }
         };

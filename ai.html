@@ -7,6 +7,7 @@
 	<script type="text/javascript" src="../jgame.js/src/js/jgame.js"></script>
 	<script type="text/javascript" src="js/ai.js"></script>
 	<script type="text/javascript">
+jg.globalize();
 function drawMap(canvas, map) {
 	var ctx = canvas.getContext("2d")
 	for (var x=0; x<map.length; x++) {
@@ -52,16 +53,16 @@ function action_by_routine(chara, action) {
 		var angle = Ai.Util.getAngleByDirection(chara.currentAngle, action.target);
 		var movePixel = action.count;
 		switch (angle) {
-			case Angle.up:
+			case Angle.Up:
 				chara.move(0, Math.max(0-chara.y, -movePixel), chara.moveTime);
 			break;
-			case Angle.down:
+			case Angle.Down:
 				chara.move(0, Math.min(game.height-chara.height-chara.y, movePixel), chara.moveTime);
 			break;
-			case Angle.right:
+			case Angle.Right:
 				chara.move(Math.min(game.width-chara.width-chara.x, movePixel), 0, chara.moveTime);
 			break;
-			case Angle.left:
+			case Angle.Left:
 				chara.move(Math.max(0-chara.x, -movePixel), 0, chara.moveTime);
 			break;
 		}
@@ -73,16 +74,16 @@ function action_by_routine(chara, action) {
 		var range = [];
 		range.push({x:chara["_x"], y:chara["_y"]});
 		switch (chara.currentAngle) {
-			case Angle.up:
+			case Angle.Up:
 				range.push({x:chara["_x"], y:chara["_y"]-1})
 			break;
-			case Angle.down:
+			case Angle.Down:
 				range.push({x:chara["_x"], y:chara["_y"]+1})
 			break;
-			case Angle.right:
+			case Angle.Right:
 				range.push({x:chara["_x"]+1, y:chara["_y"]})
 			break;
-			case Angle.left:
+			case Angle.Left:
 				range.push({x:chara["_x"]-1, y:chara["_y"]})
 			break;
 		}
@@ -95,16 +96,16 @@ function action_by_routine(chara, action) {
 						c.c[j].moving = false;
 						//continue;
 						switch (chara.currentAngle) {
-							case Angle.up:
+							case Angle.Up:
 								c.c[j].move(0, Math.max(0-c.c[j].y, -128), 20);
 							break;
-							case Angle.down:
+							case Angle.Down:
 								c.c[j].move(0, Math.min(game.height-c.c[j].height-c.c[j].y, 128), 20);
 							break;
-							case Angle.right:
+							case Angle.Right:
 								c.c[j].move(Math.min(game.width-c.c[j].width-c.c[j].x, 128), 0, 20);
 							break;
-							case Angle.left:
+							case Angle.Left:
 								c.c[j].move(Math.max(0-c.c[j].x, -128), 0, 20);
 							break;
 						}
@@ -223,10 +224,10 @@ window.onload = function() {
 
 		if (debug_action) {
 			//drawMap(document.getElementById("raderview"), raderHandler.map.map[Angle.up]);
-			drawMap(document.getElementById("up"), raderHandler.map.map[Angle.up]);
-			drawMap(document.getElementById("right"), raderHandler.map.map[Angle.right]);
-			drawMap(document.getElementById("down"), raderHandler.map.map[Angle.down]);
-			drawMap(document.getElementById("left"), raderHandler.map.map[Angle.left]);
+			drawMap(document.getElementById("up"), raderHandler.map.map[Angle.Up]);
+			drawMap(document.getElementById("right"), raderHandler.map.map[Angle.Right]);
+			drawMap(document.getElementById("down"), raderHandler.map.map[Angle.Down]);
+			drawMap(document.getElementById("left"), raderHandler.map.map[Angle.Left]);
 			var txt = "";
 			txt = debug_action.name;
 			if (debug_action.name == "move" || debug_action.name == "rotate") {
@@ -251,12 +252,12 @@ window.onload = function() {
 	var loaded = function() {
 		game.loaded.remove(loaded);
 
-		var f = new CharacterFactory(32, 48, game.r("vx"));
+		var f = new CharacterFactory(game.r("vx"), 32, 48);
 		f.createClass = Character;
 		f.charaCol = 4;
 		f.animeCnt = 3;
 		f.movePixel = 32;
-		f.angle = Angle.up;
+		f.angle = Angle.Up;
 
 		my_team = []
 		f["team_id"] = 1;
@@ -266,7 +267,7 @@ window.onload = function() {
 		my_team.push(f.create(0));
 		my_team.push(f.create(0));
 
-		f.angle = Angle.down;
+		f.angle = Angle.Down;
 		f["team_id"] = 2;
 		enemy_team = [];
 		enemy_team.push(f.create(1));
@@ -294,9 +295,9 @@ window.onload = function() {
 				Math.floor(Math.random() * (game.width-32+1)),
 				Math.floor(Math.random() * (game.height-48+1))
 			);
-			game.currentScene.root.orderDraw = JGUtil.orderDrawY;
-			game.currentScene.append(my_team[i]);
-			game.currentScene.append(enemy_team[i]);
+			game.scene.root.orderDraw = JGUtil.orderDrawY;
+			game.scene.append(my_team[i]);
+			game.scene.append(enemy_team[i]);
 		}
 		my_team[0].routine.debug = true;
 

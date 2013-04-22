@@ -113,7 +113,7 @@ module Ai {
     }
     class Rader {
         public max: number;
-        public offset: CommonOffset;
+        public offset: jg.CommonOffset;
         public sequence: any[];
         public firstDirection: Direction;
         public rotateDirection: Direction;
@@ -124,8 +124,8 @@ module Ai {
         public map: any[][][];
         public size: any;
         constructor(map: any[][]);
-        public getPos(pos: CommonOffset, angle: Angle): CommonOffset;
-        public get(x: number, y: number, angle: Angle);
+        public getPos(pos: jg.CommonOffset, angle: jg.Angle): jg.CommonOffset;
+        public get(x: number, y: number, angle: jg.Angle);
     }
     interface BasicCharacter {
         team_id: number;
@@ -144,12 +144,12 @@ module Ai {
         public map: RotableMap;
         public enemy_id: number;
         public alliance_id: number;
-        public chara: Character;
+        public chara: jg.Character;
         public debug: bool;
         public debugInfo: number[][];
-        public chipSize: CommonSize;
-        constructor(baseMap: BasicMapChip[][], chipSize: CommonSize);
-        public setCharacterInfo(chara: Character, alliance_id: number, enemy_id: number): void;
+        public chipSize: jg.CommonSize;
+        constructor(baseMap: BasicMapChip[][], chipSize: jg.CommonSize);
+        public setCharacterInfo(chara: jg.Character, alliance_id: number, enemy_id: number): void;
         public search(): Information;
         public raderCallback(info: RaderInfo): bool;
     }
@@ -161,8 +161,8 @@ module Ai {
         static getOperatorByText(s: string): Operator;
         static statementCompile(s: any): Statement;
         static routineCompile(s: string): Routine;
-        static getAngleByDirection(angle: Angle, direction: Direction): Angle;
-        static getAngleString(angle: Angle): string;
+        static getAngleByDirection(angle: jg.Angle, direction: Direction): jg.Angle;
+        static getAngleString(angle: jg.Angle): string;
         static getDirectionString(direction: Direction): string;
         static getRandomDirection(): Direction;
     }
