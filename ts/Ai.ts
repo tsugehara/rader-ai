@@ -62,7 +62,7 @@ module Ai {
 		debug:bool;
 
 		constructor() {
-			this.statements = new Statement[];
+			this.statements = [];
 			this.index = 0;
 			this.time = 0;
 		}

@@ -1,4 +1,4 @@
-module Ai {
+declare module Ai {
     enum Operator {
         Equal,
         Over,
@@ -46,7 +46,7 @@ module Ai {
         public index: number;
         public action: Action;
         public time: number;
-        public debug: bool;
+        public debug: boolean;
         constructor();
         public next(info: Information): Action;
         public reset(): void;
@@ -64,7 +64,7 @@ module Ai {
         public postExecute(routine: Routine): void;
     }
     class ActionStatement extends Statement {
-        public postReturn: bool;
+        public postReturn: boolean;
         constructor();
         public execute(info: Information);
         public postExecute(routine: Routine): void;
@@ -93,23 +93,23 @@ module Ai {
         public operator: Operator;
         constructor();
         public execute(info: Information): Action;
-        public check(info: Information): bool;
+        public check(info: Information): boolean;
     }
     class ContactConditionStatement extends ConditionStatement {
         constructor();
-        public check(info: Information): bool;
+        public check(info: Information): boolean;
     }
     class DirectionConditionStatement extends ConditionStatement {
         constructor();
-        public check(info: Information): bool;
+        public check(info: Information): boolean;
     }
     class MyConditionStatement extends ConditionStatement {
         constructor();
-        public check(info: Information): bool;
+        public check(info: Information): boolean;
     }
     class RandomConditionStatement extends ConditionStatement {
         constructor();
-        public check(info: Information): bool;
+        public check(info: Information): boolean;
     }
     class Rader {
         public max: number;
@@ -129,7 +129,7 @@ module Ai {
     }
     interface BasicCharacter {
         team_id: number;
-        is_dead: bool;
+        is_dead: boolean;
         x: number;
         y: number;
     }
@@ -145,13 +145,13 @@ module Ai {
         public enemy_id: number;
         public alliance_id: number;
         public chara: jg.Character;
-        public debug: bool;
+        public debug: boolean;
         public debugInfo: number[][];
         public chipSize: jg.CommonSize;
         constructor(baseMap: BasicMapChip[][], chipSize: jg.CommonSize);
         public setCharacterInfo(chara: jg.Character, alliance_id: number, enemy_id: number): void;
         public search(): Information;
-        public raderCallback(info: RaderInfo): bool;
+        public raderCallback(info: RaderInfo): boolean;
     }
     class Util {
         static splitText(s: string): string[];
