@@ -59,7 +59,7 @@ module Ai {
 		index:number;
 		action:Action;
 		time:number;
-		debug:bool;
+		debug:boolean;
 
 		constructor() {
 			this.statements = [];
@@ -136,7 +136,7 @@ module Ai {
 
 	//行動
 	export class ActionStatement extends Statement {
-		postReturn:bool;
+		postReturn:boolean;
 		constructor() {
 			super();
 			this.postReturn = true;
@@ -567,7 +567,7 @@ module Ai {
 	//BasicRaderHandlerで使うためのマップチップ構成
 	export interface BasicCharacter {
 		team_id: number;
-		is_dead: bool;
+		is_dead: boolean;
 		x: number;
 		y: number;
 	}
@@ -585,7 +585,7 @@ module Ai {
 		enemy_id:number;
 		alliance_id:number;
 		chara:jg.Character;
-		debug:bool;
+		debug:boolean;
 		debugInfo:number[][];
 		chipSize: jg.CommonSize;
 

@@ -2,3 +2,5 @@
 Ai.ts
 --out ../js/ai.js
 --declaration
+--disallowbool
+--disallowimportmodule
