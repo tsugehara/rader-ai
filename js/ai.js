@@ -10,7 +10,6 @@ var Ai;
         Operator[Operator["Equal"] = 0] = "Equal";
         Operator[Operator["Over"] = 1] = "Over";
         Operator[Operator["Under"] = 2] = "Under";
-
         Operator[Operator["Not"] = 3] = "Not";
     })(Ai.Operator || (Ai.Operator = {}));
     var Operator = Ai.Operator;
@@ -22,7 +21,6 @@ var Ai;
         Direction[Direction["Back"] = 3] = "Back";
         Direction[Direction["Enemy"] = 4] = "Enemy";
         Direction[Direction["Random"] = 5] = "Random";
-
         Direction[Direction["Road"] = 6] = "Road";
     })(Ai.Direction || (Ai.Direction = {}));
     var Direction = Ai.Direction;
@@ -32,7 +30,6 @@ var Ai;
         ContactType[ContactType["Enemy"] = 1] = "Enemy";
         ContactType[ContactType["Alliance"] = 2] = "Alliance";
         ContactType[ContactType["Road"] = 3] = "Road";
-
         ContactType[ContactType["Wall"] = 4] = "Wall";
     })(Ai.ContactType || (Ai.ContactType = {}));
     var ContactType = Ai.ContactType;
@@ -460,19 +457,22 @@ var Ai;
                     x2 = m - x - 1;
                     y2 = m - y - 1;
                     if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
-                        this.map[jg.Angle.Down][x][y] = map[x2][y2]; else
+                        this.map[jg.Angle.Down][x][y] = map[x2][y2];
+else
                         this.map[jg.Angle.Down][x][y] = false;
 
                     x2 = y;
                     y2 = m - x - 1;
                     if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
-                        this.map[jg.Angle.Left][x][y] = map[x2][y2]; else
+                        this.map[jg.Angle.Left][x][y] = map[x2][y2];
+else
                         this.map[jg.Angle.Left][x][y] = false;
 
                     x2 = m - y - 1;
                     y2 = x;
                     if (x2 < w && y2 < h && x2 >= 0 && y2 >= 0)
-                        this.map[jg.Angle.Right][x][y] = map[x2][y2]; else
+                        this.map[jg.Angle.Right][x][y] = map[x2][y2];
+else
                         this.map[jg.Angle.Right][x][y] = false;
                 }
             }
